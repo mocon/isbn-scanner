@@ -37,7 +37,14 @@ export default function Home() {
       try {
         const { data } = await isbnApi.get(`/book/${isbn}`)
 
-        if (data) toast('Book data retrieved from ISBNdb.')
+        if (data) {
+          console.log(JSON.stringify(data, null, 2))
+          const title = data.book.title || null
+          const message = title
+            ? `Data for "${title}" retrieved from ISBNdb.`
+            : 'Book data retrieved from ISBNdb.'
+          toast(message)
+        }
 
         // Send book data to n8n workflow
         const response = await n8nApi.post(
@@ -50,7 +57,13 @@ export default function Home() {
           setIsScanning(false)
         }
       } catch (error) {
-        toast('An error occurred. Please try again.')
+        const message =
+          // @ts-expect-error, no typing for error
+          error?.response?.data?.message ||
+          // @ts-expect-error, no typing for error
+          error?.message ||
+          'An error occurred. Please try again.'
+        toast(message)
         setIsScanning(false)
         console.error(error)
       }
