@@ -70,6 +70,46 @@ export default function Home() {
     }
   }
 
+  async function handleEnterIsbn() {
+    const isbn = prompt('Enter the book ISBN:', '')
+
+    if (isbn) {
+      try {
+        const { data } = await isbnApi.get(`/book/${isbn}`)
+
+        if (data) {
+          console.log(JSON.stringify(data, null, 2))
+          const title = data.book.title || null
+          const message = title
+            ? `Data for "${title}" retrieved from ISBNdb.`
+            : 'Book data retrieved from ISBNdb.'
+          toast(message)
+        }
+
+        // Send book data to n8n workflow
+        const response = await n8nApi.post(
+          '/webhook/7f60c9bc-af58-4be4-9cee-fe21b3461b73',
+          { ...data },
+        )
+
+        if (response.status === 200) {
+          toast('Book data sent to n8n workflow.')
+          setIsScanning(false)
+        }
+      } catch (error) {
+        const message =
+          // @ts-expect-error, no typing for error
+          error?.response?.data?.message ||
+          // @ts-expect-error, no typing for error
+          error?.message ||
+          'An error occurred. Please try again.'
+        toast(message)
+        setIsScanning(false)
+        console.error(error)
+      }
+    }
+  }
+
   return (
     <div className='grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]'>
       <main className='flex flex-col gap-8 row-start-2 items-center sm:items-start'>
@@ -95,6 +135,13 @@ export default function Home() {
             role='button'
           >
             Scan Book
+          </a>
+          <a
+            className='rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44'
+            onClick={handleEnterIsbn}
+            role='button'
+          >
+            Enter ISBN Manually
           </a>
           <a
             className='rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44'
